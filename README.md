@@ -62,13 +62,7 @@ yarn install
 
 2. **Update `.env.local`** with the provided credentials:
    ```env
-   # Supabase Configuration
-   NEXT_PUBLIC_SUPABASE_URL=https://qhixrgnklfjhazzkovbq.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoaXhyZ25rbGZqaGF6emtvdmJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1OTE5NzUsImV4cCI6MjA2ODE2Nzk3NX0.3hBUrJqg7uUzWz1ZT7Y7ftF4QVGe71V2Xx1bg6tg1FU
-
-   # Optional: App URL (for production)
-   NEXT_PUBLIC_APP_URL=http://localhost:3000
-   ```
+   
 
 ### Step 4: Database Setup (Supabase)
 
@@ -82,7 +76,6 @@ The database is already configured with the provided credentials. The applicatio
 
 ### Step 5: Run the Application
 
-```bash
 # Start the development server
 npm run dev
 
@@ -235,32 +228,6 @@ npm run lint
 npx tsc --noEmit
 ```
 
-## 🚀 Deployment Guide
-
-### Deploy to Vercel (Recommended)
-
-1. **Push to GitHub**:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git branch -M main
-   git remote add origin https://github.com/yourusername/ai-blog-summarizer.git
-   git push -u origin main
-   ```
-
-2. **Deploy on Vercel**:
-   - Visit [vercel.com](https://vercel.com)
-   - Import your GitHub repository
-   - Add environment variables in project settings
-   - Deploy!
-
-3. **Environment Variables for Production**:
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=https://qhixrgnklfjhazzkovbq.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoaXhyZ25rbGZqaGF6emtvdmJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1OTE5NzUsImV4cCI6MjA2ODE2Nzk3NX0.3hBUrJqg7uUzWz1ZT7Y7ftF4QVGe71V2Xx1bg6tg1FU
-   NEXT_PUBLIC_APP_URL=https://your-app-name.vercel.app
-   ```
 
 ## 📊 Performance Optimization
 
