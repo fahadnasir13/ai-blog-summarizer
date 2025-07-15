@@ -233,16 +233,16 @@ export async function scrapeBlogContent(url: string): Promise<ScrapedBlog> {
       if (error.code === 'ECONNABORTED') {
         throw new Error('Request timeout - the blog took too long to respond. Please try again or check if the URL is accessible.')
       }
-      if (error.response?.status === 403) {
-        throw new Error('Access forbidden - the website is blocking automated requests. Please try a different URL.')
-      }
-      if (error.response?.status === 404) {
-        throw new Error('Page not found - please check if the URL is correct and accessible.')
-      }
-      if (error.response?.status >= 500) {
-        throw new Error('Server error - the website is temporarily unavailable. Please try again later.')
-      }
-      throw new Error(`Failed to fetch blog (${error.response?.status || 'Network Error'}): ${error.message}`)
+     if (error.response?.status === 403) {
+  throw new Error('Access forbidden - the website is blocking automated requests. Please try a different URL.')
+}
+if (error.response?.status === 404) {
+  throw new Error('Page not found - please check if the URL is correct and accessible.')
+}
+if (error.response?.status && error.response.status >= 500) {
+  throw new Error('Server error - the website is temporarily unavailable. Please try again later.')
+}
+throw new Error(`Failed to fetch blog (${error.response?.status ?? 'Network Error'}): ${error.message}`)
     }
     console.error('Scraping error:', error)
     throw new Error(`Scraping failed: ${(error as Error).message}. Please ensure the URL is accessible and contains readable content.`)
