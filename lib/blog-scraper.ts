@@ -162,25 +162,18 @@ export async function scrapeBlogContent(url: string): Promise<ScrapedBlog> {
       category
     }
   } catch (error: any) {
-  if (error.response) {
-    const status = error.response.status;
+  const status = error?.response?.status;
 
-    if (status === 403) {
-      throw new Error('Access forbidden - the website is blocking automated requests. Please try a different URL.');
-    }
-    if (status === 404) {
-      throw new Error('Page not found - please check if the URL is correct and accessible.');
-    }
-    if (status >= 500) {
-      throw new Error('Server error - the website is temporarily unavailable. Please try again later.');
-    }
-
-    throw new Error(`Failed to fetch blog (${status}): ${error.message}`);
+  if (status === 404) {
+    throw new Error('Page not found - please check if the URL is correct and accessible.');
   }
 
-  throw new Error(`Network error or unexpected issue: ${error.message}`);
-}
-}
+  if (status && status >= 500) {
+    throw new Error('Server error - the website is temporarily unavailable. Please try again later.');
+  }
+
+  throw new Error(`Failed to fetch blog (${status || 'Network Error'}): ${error.message}`);
+}}
 
 // Keep your determineCategory, generateSummary, etc. below unchanged
 
