@@ -161,34 +161,25 @@ export async function scrapeBlogContent(url: string): Promise<ScrapedBlog> {
       wordCount,
       category
     }
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      if (error.code === 'ECONNABORTED') {
-        throw new Error('Request timeout - blog took too long to respond.')
-      }
+  } catch (error: any) {
+  if (error.response) {
+    const status = error.response.status;
 
-      if (error.response) {
-        const status = error.response.status
-
-        if (status === 403) {
-          throw new Error('Access forbidden - website blocked request.')
-        }
-        if (status === 404) {
-          throw new Error('Page not found - check URL.')
-        }
-        if (status >= 500) {
-          throw new Error('Server error - try again later.')
-        }
-
-        throw new Error(`Failed to fetch blog (${status}): ${error.message}`)
-      }
-
-      throw new Error(`Failed to fetch blog (Network Error): ${error.message}`)
+    if (status === 403) {
+      throw new Error('Access forbidden - the website is blocking automated requests. Please try a different URL.');
+    }
+    if (status === 404) {
+      throw new Error('Page not found - please check if the URL is correct and accessible.');
+    }
+    if (status >= 500) {
+      throw new Error('Server error - the website is temporarily unavailable. Please try again later.');
     }
 
-    console.error('Scraping error:', error)
-    throw new Error(`Scraping failed: ${(error as Error).message}`)
+    throw new Error(`Failed to fetch blog (${status}): ${error.message}`);
   }
+
+  throw new Error(`Network error or unexpected issue: ${error.message}`);
+}
 }
 
 // Keep your determineCategory, generateSummary, etc. below unchanged
