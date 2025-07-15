@@ -45,24 +45,25 @@ export async function scrapeBlogContent(url: string): Promise<ScrapedBlog> {
       $('meta[name="title"]').attr('content') ||
       'Untitled Blog Post'
 
-    console.log('Extracted title:', title)
-
+    let content = ''
     const primarySelectors = [
-      'article', '[role="main"]', 'main', '.post-content', '.entry-content', '.content', '.post-body',
-      '.article-content', '.blog-content', '.blog-post', '.post', '.entry', '.single-post', '.post-single',
-      '.story-body', '.article-body', '.post-text', '.entry-text', '.content-body', '.main-content',
-      '.primary-content', '.article-wrapper', '.post-wrapper', '.content-wrapper', '.blog-wrapper',
-      '.story-content', '.article-main', '.post-main', '.content-area', '.main-area', '.primary-area'
+      'article', '[role="main"]', 'main', '.post-content', '.entry-content', '.content', '.post-body', '.article-content',
+      '.blog-content', '.blog-post', '.post', '.entry', '.single-post', '.post-single', '.story-body', '.article-body',
+      '.post-text', '.entry-text', '.content-body', '.main-content', '.primary-content', '.article-wrapper',
+      '.post-wrapper', '.content-wrapper', '.blog-wrapper', '.story-content', '.article-main', '.post-main',
+      '.content-area', '.main-area', '.primary-area'
     ]
 
     let bestContent = ''
     let bestLength = 0
+
     for (const selector of primarySelectors) {
       const elements = $(selector)
       if (elements.length) {
         elements.each((_, element) => {
           const $element = $(element)
           $element.find('script, style, .ads, .advertisement, .social-share, .comments, .related-posts, .navigation, .nav, .menu, .sidebar, .footer, .header').remove()
+
           const text = $element.text().trim()
           if (text.length > bestLength) {
             bestContent = text
@@ -73,24 +74,28 @@ export async function scrapeBlogContent(url: string): Promise<ScrapedBlog> {
       }
     }
 
-    let content = bestContent
+    content = bestContent
 
     if (!content || content.length < 1000) {
       console.log('Using comprehensive content extraction')
       const allContentElements = $('p, h1, h2, h3, h4, h5, h6, li, blockquote, pre, code, span, div, section, article')
         .map((_, el) => {
-          const text = $(el).text().trim()
+          const $el = $(el)
+          const text = $el.text().trim()
+          const lowerText = text.toLowerCase()
           if (text.length < 20) return null
-          const lower = text.toLowerCase()
-          if (lower.includes('click here') || lower.includes('subscribe') || lower.includes('follow us') || lower.match(/^\s*(home|about|contact|privacy|terms)\s*$/)) return null
+          if (lowerText.includes('click here') && text.length < 100) return null
+          if (lowerText.includes('subscribe') && text.length < 100) return null
+          if (lowerText.includes('follow us') && text.length < 100) return null
+          if (lowerText.match(/^\s*(home|about|contact|privacy|terms)\s*$/i)) return null
           return text
-        }).get().filter(Boolean)
+        }).get().filter(text => text !== null)
 
       content = allContentElements.join('\n\n')
     }
 
     if (!content || content.length < 500) {
-      console.log('Using final fallback content extraction')
+      console.log('Using fallback body extraction')
       $('nav, header, footer, aside, .nav, .navigation, .navbar, .menu, .header, .footer, .sidebar, .aside, .breadcrumb, .pagination, .social, .share, .comment, .related, .tag, .category, .widget, .plugin, .ads, .advertisement, .banner, .popup, .modal, .overlay, .cookie, .newsletter, .subscription, [class*="nav"], [class*="menu"], [class*="sidebar"], [class*="footer"], [class*="header"], [class*="ad"], [class*="social"], [class*="share"], [class*="comment"], [id*="nav"], [id*="menu"], [id*="sidebar"], [id*="footer"], [id*="header"], [id*="ad"], [id*="social"], [id*="share"], [id*="comment"]').remove()
       content = $('body').text().trim()
     }
@@ -101,8 +106,6 @@ export async function scrapeBlogContent(url: string): Promise<ScrapedBlog> {
       .replace(/[\u00A0\u2000-\u200B\u2028-\u2029\u202F\u205F\u3000]/g, ' ')
       .replace(/[^\x20-\x7E\u00A1-\uFFFF]/g, '')
       .trim()
-
-    console.log('Final content length:', content.length)
 
     const author = $('meta[name="author"]').attr('content') ||
       $('meta[property="article:author"]').attr('content') ||
@@ -116,7 +119,6 @@ export async function scrapeBlogContent(url: string): Promise<ScrapedBlog> {
       $('meta[name="twitter:description"]').attr('content')
 
     const keywords = $('meta[name="keywords"]').attr('content')?.split(',').map(k => k.trim())
-
     const image = $('meta[property="og:image"]').attr('content') ||
       $('meta[name="twitter:image"]').attr('content') ||
       $('img').first().attr('src')
@@ -128,20 +130,20 @@ export async function scrapeBlogContent(url: string): Promise<ScrapedBlog> {
       $('.published').first().text().trim() ||
       $('.post-date').first().text().trim()
 
-    let publishDate: Date | undefined = undefined
+    let publishDate: Date | undefined
     if (publishDateStr) {
-      const parsed = new Date(publishDateStr)
-      if (!isNaN(parsed.getTime())) publishDate = parsed
+      const date = new Date(publishDateStr)
+      if (!isNaN(date.getTime())) publishDate = date
     }
 
     const category = determineCategory(content, title, keywords)
     const wordCount = content.split(/\s+/).filter(word => word.length > 0).length
 
     if (!content || content.length < 200) {
-      throw new Error(`Unable to extract sufficient content from the blog. Only found ${content.length} characters.`)
+      throw new Error(`Unable to extract sufficient content from the blog. Found only ${content.length} characters.`)
     }
 
-    console.log('Successfully scraped complete blog:', {
+    console.log('Successfully scraped:', {
       title: title.substring(0, 50) + '...',
       contentLength: content.length,
       wordCount,
@@ -162,24 +164,35 @@ export async function scrapeBlogContent(url: string): Promise<ScrapedBlog> {
   } catch (error) {
     if (axios.isAxiosError(error)) {
       if (error.code === 'ECONNABORTED') {
-        throw new Error('Request timeout - the blog took too long to respond.')
+        throw new Error('Request timeout - blog took too long to respond.')
       }
-      if (error.response?.status === 403) {
-        throw new Error('Access forbidden - the website is blocking automated requests.')
+
+      if (error.response) {
+        const status = error.response.status
+
+        if (status === 403) {
+          throw new Error('Access forbidden - website blocked request.')
+        }
+        if (status === 404) {
+          throw new Error('Page not found - check URL.')
+        }
+        if (status >= 500) {
+          throw new Error('Server error - try again later.')
+        }
+
+        throw new Error(`Failed to fetch blog (${status}): ${error.message}`)
       }
-      if (error.response?.status === 404) {
-        throw new Error('Page not found - please check if the URL is correct and accessible.')
-      }
-      if (error.response && error.response.status !== undefined && error.response.status >= 500) {
-        throw new Error('Server error - the website is temporarily unavailable.')
-      }
-      throw new Error(`Failed to fetch blog (${error.response?.status || 'Network Error'}): ${error.message}`)
+
+      throw new Error(`Failed to fetch blog (Network Error): ${error.message}`)
     }
 
     console.error('Scraping error:', error)
-    throw new Error(`Scraping failed: ${(error as Error).message}.`)
+    throw new Error(`Scraping failed: ${(error as Error).message}`)
   }
 }
+
+// Keep your determineCategory, generateSummary, etc. below unchanged
+
 
 function determineCategory(content: string, title: string, keywords?: string[]): string {
   const text = (content + ' ' + title).toLowerCase()
