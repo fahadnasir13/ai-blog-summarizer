@@ -1123,3 +1123,4 @@ if (typeof window !== 'undefined') {
     speechSynthesis.getVoices()
   }
 }
+export {}
